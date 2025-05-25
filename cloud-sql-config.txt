@@ -1,0 +1,173 @@
+# Google Cloud SQL Configuration Template
+# Use this file as a reference for creating Cloud SQL instances
+
+# Basic Instance Configuration
+instance:
+  name: wordpress-db
+  database_version: MYSQL_5_7
+  region: us-central1
+  zone: us-central1-a
+  edition: ENTERPRISE
+
+# Machine Configuration
+machine:
+  tier: db-custom-1-3840  # 1 vCPU, 3.75GB RAM
+  # Alternative tiers:
+  # db-f1-micro: 1 shared vCPU, 0.6GB RAM (good for testing)
+  # db-g1-small: 1 shared vCPU, 1.7GB RAM (good for development)
+  # db-custom-2-7680: 2 vCPU, 7.5GB RAM (production)
+  # db-custom-4-15360: 4 vCPU, 15GB RAM (high-performance)
+
+# Storage Configuration
+storage:
+  type: SSD  # Options: SSD, HDD
+  size: 10   # GB
+  auto_increase: true
+  auto_increase_limit: 0  # 0 means no limit
+
+# Network Configuration
+network:
+  private_ip: true
+  public_ip: false
+  vpc_network: default
+  authorized_networks: []
+
+# Backup Configuration
+backup:
+  enabled: true
+  start_time: "02:00"  # UTC time
+  location: us-central1
+  retention_days: 7
+  point_in_time_recovery: true
+
+# Maintenance Configuration
+maintenance:
+  day: SUNDAY
+  hour: 3  # UTC hour
+  update_track: stable
+
+# Database Flags (MySQL specific)
+database_flags:
+  # Performance tuning
+  innodb_buffer_pool_size: "75%"  # Percentage of available memory
+  max_connections: 100
+  
+  # Security
+  local_infile: "off"
+  skip_show_database: "on"
+  
+  # Logging
+  general_log: "off"
+  slow_query_log: "on"
+  long_query_time: 2
+
+# User Configuration
+users:
+  - name: root
+    password: ""  # Set via environment variable or prompt
+  - name: wordpress
+    password: ""  # Application-specific user
+    host: "%"
+
+# Database Configuration
+databases:
+  - name: wordpress
+    charset: utf8mb4
+    collation: utf8mb4_unicode_ci
+
+# High Availability (for production)
+high_availability:
+  enabled: false  # Set to true for production
+  type: REGIONAL   # REGIONAL or ZONAL
+
+# Replica Configuration (for read scaling)
+replicas: []
+# Example replica configuration:
+# - name: wordpress-db-replica
+#   region: us-east1
+#   tier: db-custom-1-3840
+#   replica_type: READ
+
+# Monitoring and Alerting
+monitoring:
+  metrics:
+    - database/cpu/utilization
+    - database/memory/utilization
+    - database/disk/utilization
+    - database/network/connections
+    
+  alerts:
+    - metric: database/cpu/utilization
+      threshold: 80
+      duration: 300  # seconds
+    - metric: database/memory/utilization
+      threshold: 90
+      duration: 300
+
+# Security Configuration
+security:
+  ssl:
+    require_ssl: false  # Set to true for production
+    ca_cert: ""
+    client_cert: ""
+    client_key: ""
+  
+  # IP allowlist for public connections
+  authorized_networks:
+    - name: "office-network"
+      value: "203.0.113.0/24"
+      expiration_time: ""
+
+# Scaling Configuration
+scaling:
+  # Vertical scaling
+  cpu_utilization_target: 70
+  memory_utilization_target: 80
+  
+  # Connection scaling
+  max_connections_per_hour: 36000
+  max_user_connections: 30
+
+# Export/Import Configuration
+export:
+  # Cloud Storage bucket for exports
+  bucket: "your-project-sql-exports"
+  # Databases to include in exports
+  databases: ["wordpress"]
+  # File format
+  file_type: SQL
+
+import:
+  # Supported formats: SQL, CSV, BAK (SQL Server)
+  file_format: SQL
+  # Import options
+  parallel: false
+  threads: 1
+
+# Cost Optimization
+cost_optimization:
+  # Use shared-core for development
+  development_tier: db-f1-micro
+  
+  # Enable automatic storage increase to avoid SLA violations
+  auto_storage_increase: true
+  
+  # Use HDD for infrequently accessed data
+  archive_storage_type: HDD
+  
+  # Schedule for non-production instances
+  schedule:
+    # Automatically stop development instances
+    stop_time: "18:00"  # 6 PM UTC
+    start_time: "08:00"  # 8 AM UTC
+    timezone: "UTC"
+    days: ["monday", "tuesday", "wednesday", "thursday", "friday"]
+
+# Disaster Recovery
+disaster_recovery:
+  # Cross-region backups
+  backup_location: us-east1
+  
+  # Point-in-time recovery window
+  recovery_window_days: 7
+  
